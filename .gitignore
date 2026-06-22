@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+*.swp
+.gemini/
+
+# Virtual environments
+venv/
+env/
+.env/
+
+# Dati pesanti o cache (Opzionale: scommenta se NON vuoi caricare il CSV)
+# battery_cycle_level_dataset_CLEAN_FINAL.csv
+
+# Risultati temporanei (Opzionale: scommenta se non vuoi caricare i pkl/png su github)
+# results/
