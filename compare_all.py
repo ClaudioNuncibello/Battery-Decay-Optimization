@@ -26,6 +26,8 @@ from src.utils   import (
     load_history, compare_optimizers,
     plot_param_trajectory, plot_dashboard,
     print_summary_table, save_history,
+    plot_metrics_barchart, plot_residuals,
+    plot_loss_surface_3d,
 )
 
 RESULTS_DIR = Path("results")
@@ -119,6 +121,27 @@ plot_dashboard(
     model_dict,
     x, y, meta,
     save_path=str(RESULTS_DIR / "dashboard_finale.png"),
+)
+
+# ── Nuovi grafici per la presentazione (Bar chart e Residui) ──
+plot_metrics_barchart(
+    histories,
+    title="Confronto Metriche di Performance",
+    save_path=str(RESULTS_DIR / "metrics_barchart.png"),
+)
+
+plot_residuals(
+    model_dict,
+    x, y,
+    save_path=str(RESULTS_DIR / "residuals_comparison.png"),
+)
+
+# Chiamata al nuovo grafico 3D. Passiamo un modello qualsiasi, tanto viene sovrascritto temporaneamente
+plot_loss_surface_3d(
+    histories,
+    model_dict[histories[0].label],
+    x, y,
+    save_path=str(RESULTS_DIR / "loss_surface_3d.png"),
 )
 
 print("\n[compare_all] Completato. Grafici in:", RESULTS_DIR)

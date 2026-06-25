@@ -157,7 +157,7 @@ def plot_loss_curve(
         fig.tight_layout()
         if save_path:
             fig.savefig(save_path, dpi=150, bbox_inches="tight")
-        plt.show()
+        plt.close(fig)
 
     return fig
 
@@ -259,7 +259,7 @@ def plot_fitting_curve(
         fig.tight_layout()
         if save_path:
             fig.savefig(save_path, dpi=150, bbox_inches="tight")
-        plt.show()
+        plt.close(fig)
 
     return fig
 
@@ -318,7 +318,7 @@ def compare_optimizers(
         fig.tight_layout()
         if save_path:
             fig.savefig(save_path, dpi=150, bbox_inches="tight")
-        plt.show()
+        plt.close(fig)
 
     return fig
 
@@ -502,3 +502,194 @@ def save_history(history: TrainHistory, path: str):
 def load_history(path: str) -> TrainHistory:
     """Wrapper per TrainHistory.load() — comodo da importare direttamente."""
     return TrainHistory.load(path)
+
+
+# ============================================================
+# 8. Metriche e Residui per Presentazione
+# ============================================================
+
+def plot_metrics_barchart(
+    histories: List[TrainHistory],
+    title: str = "Confronto Metriche di Performance",
+    save_path: Optional[str] = None
+) -> Figure:
+    """
+    Crea un grafico a barre per confrontare la loss finale e il tempo di esecuzione.
+    """
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+    
+    labels = [h.label for h in histories]
+    colors = [_get_color(h.label) for h in histories]
+    
+    losses = [h.losses[-1] if h.losses else float('nan') for h in histories]
+    times = [h.elapsed_s for h in histories]
+    
+    # Bar plot for Final Loss
+    bars1 = axes[0].bar(labels, losses, color=colors, alpha=0.8)
+    
+    # Rimuoviamo la scala logaritmica perché i valori sono vicini,
+    # impostiamo un limite y per mostrare bene il testo sopra.
+    max_loss = max([l for l in losses if not np.isnan(l)])
+    axes[0].set_ylim(0, max_loss * 1.15)
+    
+    axes[0].set_ylabel("Final MSE Loss")
+    axes[0].set_title("Loss Finale")
+    
+    # Aggiunge i valori sopra le barre
+    for bar in bars1:
+        yval = bar.get_height()
+        if not np.isnan(yval):
+            axes[0].text(bar.get_x() + bar.get_width()/2, yval + (0.02 * max_loss),
+                         f'{yval:.3f}', ha='center', va='bottom', fontsize=9, color='white')
+    
+    # Bar plot for Elapsed Time
+    bars2 = axes[1].bar(labels, times, color=colors, alpha=0.8)
+    
+    max_time = max(times) if times else 1.0
+    axes[1].set_ylim(0, max_time * 1.15)
+    
+    axes[1].set_ylabel("Tempo (secondi)")
+    axes[1].set_title("Tempo di Esecuzione")
+    
+    for bar in bars2:
+        yval = bar.get_height()
+        axes[1].text(bar.get_x() + bar.get_width()/2, yval + (0.02 * max_time),
+                     f'{yval:.2f}s', ha='center', va='bottom', fontsize=9, color='white')
+    
+    fig.suptitle(title, fontsize=14, y=1.02)
+    fig.tight_layout()
+    
+    if save_path:
+        fig.savefig(save_path, dpi=150, bbox_inches="tight")
+        print(f"[utils] Barchart salvato in '{save_path}'")
+        
+    return fig
+
+
+def plot_residuals(
+    model_dict: dict,
+    x: torch.Tensor,
+    y: torch.Tensor,
+    save_path: Optional[str] = None
+) -> Figure:
+    """
+    Plotta i residui (y_reale - y_predetta) per ogni modello.
+    Utile per verificare se il modello sottostima o sovrastima in certe regioni.
+    """
+    n_models = len(model_dict)
+    fig, axes = plt.subplots(n_models, 1, figsize=(10, 2.5 * n_models), sharex=True)
+    if n_models == 1:
+        axes = [axes]
+        
+    x_np = x.detach().numpy()
+    y_np = y.detach().numpy()
+    
+    for ax, (label, model) in zip(axes, model_dict.items()):
+        c = _get_color(label)
+        with torch.no_grad():
+            pred = model(x).numpy()
+        residuals = y_np - pred
+        
+        ax.scatter(x_np, residuals, s=6, alpha=0.5, color=c)
+        ax.axhline(0, color="white", linestyle="--", linewidth=1.5, alpha=0.7)
+        ax.set_ylabel(f"Residuo (Ah)")
+        ax.set_title(f"Residui — {label}")
+        
+    axes[-1].set_xlabel("Ciclo normalizzato x")
+    fig.suptitle("Analisi dei Residui (y_reale - y_pred)", fontsize=14, y=1.02)
+    fig.tight_layout()
+    
+    if save_path:
+        fig.savefig(save_path, dpi=150, bbox_inches="tight")
+        print(f"[utils] Residui salvati in '{save_path}'")
+        
+    return fig
+
+
+def plot_loss_surface_3d(
+    histories: List[TrainHistory],
+    model: "BatteryDecayModel",
+    x: torch.Tensor,
+    y: torch.Tensor,
+    save_path: Optional[str] = None
+) -> Figure:
+    """
+    Plotta la superficie 3D della loss fissando alpha al valore ottimo (da L-BFGS-B o l'ultimo),
+    e variando beta e gamma. Sovrappone le traiettorie degli ottimizzatori.
+    """
+    # Trova alpha ottimo
+    best_h = next((h for h in histories if 'bfgs' in h.label.lower()), histories[0])
+    alpha_opt = best_h.params[-1]['alpha']
+    
+    # Definisci limiti beta e gamma
+    all_betas = []
+    all_gammas = []
+    for h in histories:
+        all_betas.extend([p['beta'] for p in h.params])
+        all_gammas.extend([p['gamma'] for p in h.params])
+        
+    b_min, b_max = min(all_betas), max(all_betas)
+    g_min, g_max = min(all_gammas), max(all_gammas)
+    
+    b_margin = (b_max - b_min) * 0.1 if (b_max - b_min) > 0 else 1.0
+    g_margin = (g_max - g_min) * 0.1 if (g_max - g_min) > 0 else 0.5
+    
+    b_min, b_max = max(1e-4, b_min - b_margin), b_max + b_margin
+    g_min, g_max = max(1e-4, g_min - g_margin), g_max + g_margin
+    
+    # Crea griglia
+    grid_size = 40
+    B_val = np.linspace(b_min, b_max, grid_size)
+    G_val = np.linspace(g_min, g_max, grid_size)
+    B, G = np.meshgrid(B_val, G_val)
+    Z = np.zeros_like(B)
+    
+    import torch.nn.functional as F
+    
+    # Salva parametri vecchi
+    old_p = model.get_params()
+    
+    # Calcola loss sulla griglia
+    for i in range(grid_size):
+        for j in range(grid_size):
+            with torch.no_grad():
+                model.set_param_vector(torch.tensor([alpha_opt, B[i, j], G[i, j]], dtype=torch.float32))
+                pred = model(x)
+                Z[i, j] = F.mse_loss(pred, y).item()
+                
+    # Ripristina
+    model.set_param_vector(torch.tensor([old_p['alpha'], old_p['beta'], old_p['gamma']], dtype=torch.float32))
+                
+    fig = plt.figure(figsize=(12, 8))
+    ax = fig.add_subplot(111, projection='3d')
+    
+    surf = ax.plot_surface(B, G, Z, cmap='magma', alpha=0.5, edgecolor='none')
+    fig.colorbar(surf, ax=ax, shrink=0.5, aspect=10, label="MSE Loss")
+    
+    for h in histories:
+        c = _get_color(h.label)
+        b_traj = [p['beta'] for p in h.params]
+        g_traj = [p['gamma'] for p in h.params]
+        z_traj = h.losses
+        
+        ax.plot(b_traj, g_traj, z_traj, color=c, linewidth=2, label=h.label, marker='o', markersize=3, markevery=max(1, len(b_traj)//15))
+        
+    ax.set_xlabel(r'$\beta$', labelpad=10)
+    ax.set_ylabel(r'$\gamma$', labelpad=10)
+    ax.set_zlabel('Loss', rotation=90, labelpad=15)
+    ax.set_title(rf'Loss Surface 3D ($\alpha$={alpha_opt:.3f}) e Traiettorie', pad=20)
+    
+    # Aggiungi un po' di margine a sinistra e destra per evitare tagli
+    fig.subplots_adjust(left=0.05, right=0.95)
+    
+    # Migliora vista
+    ax.view_init(elev=25, azim=45)
+    
+    # Sposta legend in alto a sinistra per non sovrapporsi con la colorbar a destra
+    ax.legend(fontsize=10, loc='upper left', bbox_to_anchor=(0.05, 0.95))
+    
+    if save_path:
+        fig.savefig(save_path, dpi=150, bbox_inches="tight")
+        print(f"[utils] Loss Surface 3D salvata in '{save_path}'")
+        
+    return fig
