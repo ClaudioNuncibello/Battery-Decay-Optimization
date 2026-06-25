@@ -1,0 +1,67 @@
+\documentclass[11pt, a4paper]{article}
+
+% ----- PACCHETTI -----
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[italian]{babel}
+\usepackage{amsmath, amsfonts, amssymb} % Matematica avanzata
+\usepackage{graphicx}                   % Inserimento immagini
+\usepackage{geometry}                   % Margini pagina
+\usepackage{hyperref}                   % Link ipertestuali e indice cliccabile
+\usepackage{booktabs}                   % Tabelle professionali
+\usepackage{float}                      % Posizionamento fisso delle figure (H)
+\usepackage{subcaption}                 % Subfigure
+\usepackage{microtype}                  % Migliora la tipografia
+
+% ----- IMPOSTAZIONI -----
+\geometry{a4paper, top=3cm, bottom=3cm, left=2.5cm, right=2.5cm}
+\graphicspath{{results/}} % Percorso per cercare direttamente le immagini generate
+
+% Titolo e info
+\title{\textbf{Ottimizzazione Vincolata per il Curve Fitting}\\
+\large Analisi Numerica e Comparativa per la Previsione del Degrado delle Batterie}
+\author{Claudio Nuncibello \\ \small Corso di Numerical Methods for Scientific Computing}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Questo studio si concentra sull'applicazione di diversi metodi di ottimizzazione numerica (Gradient Descent, L-BFGS-B, Adam e Lion) per la risoluzione di un problema di curve fitting parametrico non lineare. Utilizzando i log sperimentali estratti dal dataset della NASA riguardante il degrado delle batterie agli ioni di litio, si intende dimostrare l'efficacia e la robustezza degli algoritmi Quasi-Newton su spazi di ottimizzazione convessi a bassa dimensionalità. Il lavoro contrappone i risultati ottenuti da metodologie classiche e fisicamente vincolate rispetto a quelli derivanti da approcci puramente black-box basati sul Deep Learning.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+% ---------------------------------------------------------
+% CAPITOLO 1
+% ---------------------------------------------------------
+\section{Introduzione e Analisi del Problema}
+
+\subsection{Contesto Operativo}
+La previsione del ciclo di vita e dello stato di salute (\textit{State of Health}, SOH) delle batterie agli ioni di litio rappresenta una delle sfide centrali nell'ingegneria dell'affidabilità moderna. Sistemi aerospaziali, veicoli elettrici e dispositivi elettronici dipendono criticamente dalla capacità di un accumulatore di mantenere la propria carica nel tempo. Nel presente studio viene impiegato il dataset pubblico \textit{NASA Battery Cycle-Level Dataset}, che fornisce registrazioni sperimentali relative al degrado della capacità di diverse celle sottoposte a continui cicli di carica e scarica. La presenza di rumore fisico nelle misurazioni (come i fisiologici recuperi temporanei di capacità) rende questo dataset un banco di prova ideale per valutare la robustezza di vari algoritmi di ottimizzazione.
+
+\subsection{Il Problema della Regressione Non Lineare}
+Dal punto di vista dell'Analisi Numerica, la previsione del degrado si traduce in un classico problema di \textit{curve fitting}. L'obiettivo è individuare una funzione matematica $F(x; \boldsymbol{\theta})$, dipendente da un vettore di parametri incogniti $\boldsymbol{\theta}$, che approssimi al meglio un set di $m$ misurazioni sperimentali $(x_i, y_i)$. 
+
+Per misurare la qualità dell'approssimazione, si definisce il vettore residuo $r$, in cui l'i-esimo elemento è dato dalla discrepanza tra il valore reale e quello predetto:
+\begin{equation}
+    r_i = y_i - F(x_i; \boldsymbol{\theta})
+\end{equation}
+
+Secondo il Metodo dei Minimi Quadrati, il vettore dei parametri ottimale $\boldsymbol{\theta}^*$ si ottiene minimizzando la norma euclidea al quadrato del residuo (la \textit{Loss function}):
+\begin{equation}
+    \mathcal{L}(\boldsymbol{\theta}) = \|r\|_2^2 = \sum_{i=1}^{m} \left(y_i - F(x_i; \boldsymbol{\theta})\right)^2
+\end{equation}
+
+Mentre per i sistemi lineari è possibile ricavare la soluzione esatta risolvendo le Equazioni Normali ($X^T X \boldsymbol{\theta} = X^T y$), per i modelli non lineari --- come quello che governa il decadimento chimico --- l'approccio analitico diretto non è percorribile. È pertanto necessario ricorrere a metodi iterativi di discesa per navigare lo spazio dei parametri e individuare il minimo globale della funzione $\mathcal{L}(\boldsymbol{\theta})$.
+
+\subsection{Obiettivo dello Studio}
+Lo scopo principale di questo progetto non risiede nella semplice addestramento di un modello black-box, bensì nell'analisi numerica comparativa di quattro differenti metodi di ottimizzazione continua: il Gradient Descent (GD) classico, l'algoritmo Quasi-Newton L-BFGS-B, e i moderni ottimizzatori stocastici derivati dal Deep Learning (Adam e Lion). Questi metodi verranno impiegati per fittare la seguente equazione parametrica non lineare:
+\begin{equation}
+    y = \alpha e^{-\beta x} + \gamma
+\end{equation}
+Lo studio esplorerà le dinamiche di convergenza, la gestione dei vincoli fisici e l'efficienza computazionale di ciascun algoritmo, dimostrando il legame profondo tra la matematica numerica tradizionale e l'Intelligenza Artificiale moderna.
+
+\end{document}
