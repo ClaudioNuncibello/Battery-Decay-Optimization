@@ -121,3 +121,39 @@ class BatteryDecayModel(nn.Module):
             f"beta={p['beta']:.5f}, "
             f"gamma={p['gamma']:.5f})"
         )
+
+
+class MLPModel(nn.Module):
+    """
+    Rete Neurale Multi-Layer Perceptron per il decadimento batteria.
+    Funge da baseline black-box per dimostrare l'utilità del modello fisico.
+    """
+    def __init__(self, hidden_dim: int = 32):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(1, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, 1)
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Parametri
+        ----------
+        x : Tensor shape (N,) — cicli normalizzati
+        
+        Ritorna
+        -------
+        Tensor shape (N,)
+        """
+        # Trasforma da (N,) a (N, 1) per il layer lineare
+        x_in = x.unsqueeze(1)
+        y_pred = self.net(x_in)
+        # Ritorna a (N,) per uniformità con la loss
+        return y_pred.squeeze(1)
+
+    def get_params(self) -> dict:
+        """Ritorna dummy dict per uniformità col trainer."""
+        return {"alpha": 0.0, "beta": 0.0, "gamma": 0.0}
