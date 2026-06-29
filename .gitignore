@@ -21,3 +21,4 @@ env/
 # Risultati temporanei (Opzionale: scommenta se non vuoi caricare i pkl/png su github)
 # results/
 .agents/
+.data/
