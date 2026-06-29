@@ -32,5 +32,6 @@ Cartella auto-generata in cui vengono salvati:
 
 ### 4. File nella Root Principale
 - **`relazione.tex`**: Il file sorgente LaTeX per la relazione accademica finale.
+- **`relazione.pdf`**: Relazione accademica finale.
 - **`battery_cycle_level_dataset_CLEAN_FINAL.csv`**: Il dataset pulito (dati originali estratti dal repository NASA).
-- **`data/TEORIA.md`**: Un documento markdown di supporto che contiene i fondamenti matematici e di analisi numerica a sostegno del progetto.
+
