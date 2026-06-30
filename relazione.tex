@@ -42,6 +42,22 @@ Questo studio si concentra sull'applicazione di diversi metodi di ottimizzazione
 \subsection{Contesto Operativo}
 La previsione del ciclo di vita e dello stato di salute (\textit{State of Health}, SOH) delle batterie agli ioni di litio rappresenta una delle sfide centrali nell'ingegneria dell'affidabilità moderna. Sistemi aerospaziali, veicoli elettrici e dispositivi elettronici dipendono criticamente dalla capacità di un accumulatore di mantenere la propria carica nel tempo. Nel presente studio viene impiegato il dataset pubblico \textit{NASA Battery Cycle-Level Dataset}, che fornisce registrazioni sperimentali relative al degrado della capacità di diverse celle sottoposte a continui cicli di carica e scarica. La presenza di rumore fisico nelle misurazioni (come i fisiologici recuperi temporanei di capacità) rende questo dataset un banco di prova ideale per valutare la robustezza di vari algoritmi di ottimizzazione.
 
+\subsection{Origine e Caratteristiche del Dataset}
+Il dataset utilizzato in questo studio proviene dal \textit{Prognostics Center of Excellence (PCoE)} della NASA. Nello specifico, si tratta del celebre dataset relativo all'invecchiamento delle batterie agli ioni di litio (Li-ion), ampiamente utilizzato in letteratura come benchmark per algoritmi di prognostica e stima del ciclo di vita.
+
+Il file analizzato, \texttt{battery\_cycle\_level\_dataset\_CLEAN\_FINAL.csv}, raccoglie i dati aggregati a livello di singolo ciclo di carica/scarica per un totale di 19 batterie distinte (tra cui le serie B0005, B0006, B0007, B0018, ecc.). Per ciascun ciclo di funzionamento di una batteria, il dataset traccia le seguenti caratteristiche:
+\begin{itemize}
+    \item \textbf{\texttt{battery\_id}}: Identificativo univoco della cella di batteria sotto test.
+    \item \textbf{\texttt{cycle}}: L'indice progressivo del ciclo di carica/scarica (compreso tra 1 e un massimo globale di 168 cicli).
+    \item \textbf{\texttt{capacity}}: La capacità di scarica della batteria, misurata in Ampere-ora (Ah). Questa rappresenta la variabile target principale $y$ per il nostro problema di curve fitting, il cui andamento decrescente nel tempo testimonia il degrado progressivo dell'accumulatore.
+    \item \textbf{\texttt{voltage}}: Il valore medio di tensione misurato durante il ciclo.
+    \item \textbf{\texttt{temperature}}: La temperatura di esercizio registrata sulla cella in gradi Celsius (°C).
+    \item \textbf{\texttt{soh}} (\textit{State of Health}): Lo stato di salute stimato della batteria, calcolato come rapporto rispetto alla capacità nominale iniziale.
+    \item \textbf{\texttt{rul}} (\textit{Remaining Useful Life}): Il numero residuo di cicli utili prima del raggiungimento della fine della vita utile (\textit{End of Life}).
+\end{itemize}
+
+Nel processo di pre-processing dei dati (implementato nel modulo \texttt{src/data.py}), vengono considerate solo le batterie che presentano almeno 30 cicli registrati, ottenendo così un dataset filtrato finale composto da 19 batterie e 1322 campioni complessivi. Per agevolare la convergenza e la stabilità numerica degli algoritmi di ottimizzazione, i cicli operativi vengono normalizzati nell'intervallo $[0, 1]$ dividendo l'indice progressivo per il massimo valore di cicli registrato ($168$).
+
 \subsection{Il Problema della Regressione Non Lineare}
 Dal punto di vista dell'Analisi Numerica, la previsione del degrado si traduce in un classico problema di \textit{curve fitting}. L'obiettivo è individuare una funzione matematica $F(x; \boldsymbol{\theta})$, dipendente da un vettore di parametri incogniti $\boldsymbol{\theta}$, che approssimi al meglio un set di $m$ misurazioni sperimentali $(x_i, y_i)$. 
 
